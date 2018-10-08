@@ -17,7 +17,6 @@ import pyotp
 import requests
 from python_anticaptcha import AnticaptchaClient, FunCaptchaTask, Proxy
 
-
 try:
     from python_anticaptcha.exceptions import AnticaptchaException
 except ImportError:
@@ -30,7 +29,6 @@ except ImportError:
 
 try:  # python2 compatibility
     input = raw_input
-    FileNotFoundError
 except NameError:
     FileNotFoundError = IOError
 
