@@ -29,6 +29,7 @@ except ImportError:
 
 try:  # python2 compatibility
     input = raw_input
+    FileNotFoundError
 except NameError:
     FileNotFoundError = IOError
 
