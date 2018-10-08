@@ -1623,5 +1623,8 @@ class Core(object):
         rc = self.__request__(method, url, params=params)
         return rc
 
+    def get_user_mass_info(self):
+        return self._usermassinfo
+
     def get_stats_instance(self):
         return self.stats

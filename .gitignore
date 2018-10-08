@@ -23,3 +23,7 @@ codecov.yml
 club_players.txt
 database.db
 relist.py
+*cookies.txt
+*stats.json
+*token.txt
+*test.json

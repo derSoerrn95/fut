@@ -1,4 +1,5 @@
 import requests
+import re
 
 from .exceptions import FutError
 
@@ -8,6 +9,14 @@ auth_url = rc['authURL']
 pin_url = rc['pinURL']  # TODO: urls in dict?
 client_id = rc['eadpClientId']
 fun_captcha_public_key = rc['funCaptchaPublicKey']
+
+# dynamic hex numbers:
+rc = requests.get('https://www.easports.com/de/fifa/ultimate-team/web-app/').text
+
+resourceRoot = re.search('resourceRoot\s*=\s*"(.+?)\";', rc).group(1)
+resourceBase = re.search('resourceBase\s*=\s*"(.+?)\";', rc).group(1)
+guid = re.search('guid\s*=\s*"(.+?)\";', rc).group(1)
+year = re.search('year\s*=\s*"(.+?)\";', rc).group(1)
 
 
 # remote config - should be refresh every x seconds
@@ -31,3 +40,4 @@ itemsPerPage['club'] = 91  # ea, please don't troll us :-)
 card_info_url = 'https://fifa19.content.easports.com/fifa/fltOnlineAssets/7D49A6B1-760B-4491-B10C-167FBC81D58A/2019/fut/items/web/'  # TODO: get hash from somewhere, dynamic year
 # TODO: could be nice to add locals on startup
 messages_url = 'https://www.easports.com/fifa/ultimate-team/web-app/loc/en_US.json'  # TODO: needs to base64 decoded.
+
