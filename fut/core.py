@@ -201,7 +201,7 @@ def nations(timeout=timeout):
     return nations
 
 
-def leagues(year=2018, timeout=timeout):
+def leagues(year=2019, timeout=timeout):
     """Return all leagues in dict {id0: league0, id1: legaue1}.
 
     :params year: Year.
@@ -216,7 +216,7 @@ def leagues(year=2018, timeout=timeout):
     return leagues
 
 
-def teams(year=2018, timeout=timeout):
+def teams(year=2019, timeout=timeout):
     """Return all teams in dict {id0: team0, id1: team1}.
 
     :params year: Year.
@@ -231,7 +231,7 @@ def teams(year=2018, timeout=timeout):
     return teams
 
 
-def stadiums(year=2018, timeout=timeout):
+def stadiums(year=2019, timeout=timeout):
     """Return all stadium in dict {id0: stadium0, id1: stadium1}.
 
     :params year: Year.
@@ -273,7 +273,7 @@ def players(timeout=timeout):
     return players
 
 
-def playstyles(year=2018, timeout=timeout):
+def playstyles(year=2019, timeout=timeout):
     """Return all playstyles in dict {id0: playstyle0, id1: playstyle1}.
 
     :params year: Year.
@@ -331,6 +331,7 @@ class Core(object):
                   'display': 'web2/login',
                   'locale': 'en_US',
                   'redirect_uri': 'https://www.easports.com/fifa/ultimate-team/web-app/auth.html',
+                  'release_type': 'prod',
                   'scope': 'basic.identity offline signin'}
         self.r.headers['Referer'] = 'https://www.easports.com/fifa/ultimate-team/web-app/'
         rc = self.r.get('https://accounts.ea.com/connect/auth', params=params, timeout=self.timeout)
@@ -389,7 +390,8 @@ class Core(object):
                 # self.r.headers['Upgrade-Insecure-Requests'] = '1'  # ?
                 # self.r.headers['Origin'] = 'https://signin.ea.com'
                 rc = self.r.post(url.replace('s3', 's4'),
-                                 {'oneTimeCode': code, '_trustThisDevice': 'on', 'trustThisDevice': 'on',
+                                 {'oneTimeCode': code,
+                                  '_trustThisDevice': 'on',
                                   '_eventId': 'submit'}, timeout=self.timeout)
                 # rc = rc.text
                 if 'Incorrect code entered' in rc.text or 'Please enter a valid security code' in rc.text:
@@ -587,7 +589,8 @@ class Core(object):
         params = {'client_id': 'FOS-SERVER',  # i've seen in some js/json response but cannot find now
                   'redirect_uri': 'nucleus:rest',
                   'response_type': 'code',
-                  'access_token': self.access_token}
+                  'access_token': self.access_token,
+                  'release_type': 'prod'}
         rc = self.r.get('https://accounts.ea.com/connect/auth', params=params).json()
         auth_code = rc['code']
 
@@ -727,10 +730,10 @@ class Core(object):
         events = [self.pin.event('page_view', 'Hub - Home')]
         self.pin.send(events)
 
-        # pinEvents - boot_end
-        events = [self.pin.event('connection'),
-                  self.pin.event('boot_end', end_reason='normal')]
-        self.pin.send(events)
+        # pinEvents - boot_end  # boot_end is connected with "connection" and pops only after browser window loses focus
+        # events = [self.pin.event('connection'),
+        #           self.pin.event('boot_end', end_reason='normal')]
+        # self.pin.send(events)
 
         self.keepalive()  # credits
 
@@ -965,7 +968,7 @@ class Core(object):
             url = '{0}{1}.json'.format(card_info_url, base_id)
             return requests.get(url, timeout=self.timeout).json()
 
-    def searchDefinition(self, asset_id, start=0, count=itemsPerPage['transferMarket']):
+    def searchDefinition(self, asset_id, start=0, page_size=itemsPerPage['transferMarket'], count=None):
         """Return variations of the given asset id, e.g. IF cards.
 
         :param asset_id: Asset id / Definition id.
@@ -975,6 +978,9 @@ class Core(object):
         method = 'GET'
         url = 'defid'
 
+        if count:  # backward compatibility, will be removed in future
+            page_size = count
+
         base_id = baseId(asset_id)
         if base_id not in self.players:
             raise FutError(reason='Invalid player asset/definition id.')
@@ -983,7 +989,7 @@ class Core(object):
             'defId': base_id,
             'start': start,
             'type': 'player',
-            'count': count
+            'count': page_size
         }
 
         rc = self.__request__(method, url, params=params)
@@ -1026,18 +1032,9 @@ class Core(object):
 
         # pinEvents
         if start == 0:
-            events = [self.pin.event('page_view', 'Transfer Market Search')]
+            events = [self.pin.event('page_view', 'Hub - Transfers'), self.pin.event('page_view', 'Transfer Market Search')]
             self.pin.send(events, fast=fast)
 
-        # if start > 0 and page_size == 16:
-        #     if not self.emulate:  # wbeapp
-        #         page_size = 12
-        #         if start == 16:  # second page
-        #             start = 12
-        #     elif self.emulate and start == 16:  # emulating android/ios
-        #         start = 15
-        # elif page_size > 50:  # server restriction
-        #     page_size = 50
         params = {
             'start': start,
             'num': page_size,
@@ -1078,7 +1075,7 @@ class Core(object):
 
         # pinEvents
         if start == 0:
-            events = [self.pin.event('page_view', 'Transfer Market Results - List View')]
+            events = [self.pin.event('page_view', 'Transfer Market Results - List View'), self.pin.event('page_view', 'Item - Detail View')]
             self.pin.send(events, fast=fast)
 
         return [itemParse(i) for i in rc.get('auctionInfo', ())]
@@ -1126,9 +1123,9 @@ class Core(object):
         else:
             return False
 
-    def club(self, sort='desc', ctype='player', defId='', start=0, count=91,
+    def club(self, sort='desc', ctype='player', defId='', start=0, count=None, page_size=itemsPerPage['club'],
              level=None, category=None, assetId=None, league=None, club=None,
-             position=None, zone=None, nationality=None, rare=False, playStyle=None, page_size=itemsPerPage['club']):
+             position=None, zone=None, nationality=None, rare=False, playStyle=None):
         """Return items in your club, excluding consumables.
 
         :param ctype: [development / ? / ?] Card type.
@@ -1152,7 +1149,10 @@ class Core(object):
         method = 'GET'
         url = 'club'
 
-        params = {'sort': sort, 'type': ctype, 'defId': defId, 'start': start, 'count': count}
+        if count:  # backward compatibility, will be removed in future
+            page_size = count
+
+        params = {'sort': sort, 'type': ctype, 'defId': defId, 'start': start, 'count': page_size}
         if level:
             params['level'] = level
         if category:
@@ -1185,7 +1185,9 @@ class Core(object):
                 pgid = 'Club - Club Items - List View'
             # else:  # TODO: THIS IS probably WRONG, detect all ctypes
             #     pgid = 'Club - Club Items - List View'
-            events = [self.pin.event('page_view', pgid)]
+            events = [self.pin.event('page_view', 'Hub - Club'), self.pin.event('page_view', pgid)]
+            if rc['itemData']:
+                events.append(self.pin.event('page_view', 'Item - Detail View'))
             self.pin.send(events)
 
         return [itemParse({'itemData': i}) for i in rc['itemData']]
@@ -1230,7 +1232,7 @@ class Core(object):
         rc = self.__request__(method, url)
 
         # pinEvents
-        events = [self.pin.event('page_view', 'Squads - Squad Overview')]
+        events = [self.pin.event('page_view', 'Squad Details'), self.pin.event('page_view', 'Squads - Squad Overview')]
         self.pin.send(events)
 
         return [itemParse(i) for i in rc.get('players', ())]
@@ -1265,7 +1267,9 @@ class Core(object):
         rc = self.__request__(method, url)
 
         # pinEvents
-        events = [self.pin.event('page_view', 'Transfer List - List View')]
+        events = [self.pin.event('page_view', 'Hub - Transfers'), self.pin.event('page_view', 'Transfer List - List View')]
+        if rc.get('auctionInfo'):
+            events.append(self.pin.event('page_view', 'Item - Detail View'))
         self.pin.send(events)
 
         return [itemParse(i) for i in rc.get('auctionInfo', ())]
@@ -1278,7 +1282,9 @@ class Core(object):
         rc = self.__request__(method, url)
 
         # pinEvents
-        events = [self.pin.event('page_view', 'Transfer Targets - List View')]
+        events = [self.pin.event('page_view', 'Hub - Transfers'), self.pin.event('page_view', 'Transfer Targets - List View')]
+        if rc.get('auctionInfo'):
+            events.append(self.pin.event('page_view', 'Item - Detail View'))
         self.pin.send(events)
 
         return [itemParse(i) for i in rc.get('auctionInfo', ())]
@@ -1292,6 +1298,8 @@ class Core(object):
 
         # pinEvents
         events = [self.pin.event('page_view', 'Unassigned Items - List View')]
+        if rc.get('itemData'):
+                events.append(self.pin.event('page_view', 'Item - Detail View'))
         self.pin.send(events)
 
         return [itemParse({'itemData': i}) for i in rc.get('itemData', ())]

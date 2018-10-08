@@ -29,48 +29,18 @@ class Pin(object):
         self.dob = dob
         self.platform = platform
         rc = requests.get('https://www.easports.com/fifa/ultimate-team/web-app/js/compiled_1.js').text
-        plat = re.search('plat:"(.+?)"', rc)
-        if plat:
-            plat = plat.group(1)
-        else:
-            plat = 'web'
 
-        taxv = re.search('taxv:"(.+?)"', rc)
-        if taxv:
-            taxv = taxv.group(1)
-
-        tidt = re.search('tidt:"(.+?)"', rc)
-        if tidt:
-            tidt = tidt.group(1)
+        self.taxv = re.search('taxv:"(.+?)"', rc).group(1)
+        self.tidt = re.search('tidt:"(.+?)"', rc).group(1)
 
         self.sku = sku or re.search('enums.SKU.FUT="(.+?)"', rc).group(1)
         self.rel = re.search('rel:"(.+?)"', rc).group(1)
         self.gid = re.search('gid:([0-9]+?)', rc).group(1)
-        self.plat = plat
+        self.plat = 'web'  # where is it? WEB:?
         self.et = re.search('et:"(.+?)"', rc).group(1)
         self.pidt = re.search('pidt:"(.+?)"', rc).group(1)
         self.v = re.search('APP_VERSION="([0-9\.]+)"', rc).group(1)
 
-        rc = requests.get('https://www.easports.com/fifa/ultimate-team/web-app/js/compiled_2.js').text
-
-        if not taxv:
-            taxv = re.search('PinManager.TAXONOMY_VERSION=([0-9\.]+)', rc)
-            if taxv:
-                taxv = taxv.group(1)
-            else:
-                print('>>>>>>>>> warining we should check if ea changed smth')
-                taxv = '1.1'
-
-        if not tidt:
-            tidt = re.search('PinManager.TAXONOMY_VERSION=([0-9\.]+)', rc)
-            if tidt:
-                tidt = tidt.group(1)
-            else:
-                print('>>>>>>>>> warining we should check if ea changed smth')
-                tidt = 'easku'
-
-        self.taxv = taxv
-        self.tidt = tidt
         self.r = requests.Session()
         self.r.headers = headers
         self.r.headers['Origin'] = 'https://www.easports.com'
@@ -79,7 +49,7 @@ class Pin(object):
         self.r.headers['x-ea-game-id-type'] = self.tidt
         self.r.headers['x-ea-taxv'] = self.taxv
 
-        self.custom = {"networkAccess": "W"}  # wifi?
+        self.custom = {"networkAccess": "G"}  # wifi?
         # TODO?: full boot process when there is no session (boot start)
 
         self.custom['service_plat'] = platform[:3]
@@ -94,7 +64,6 @@ class Pin(object):
     def event(self, en, pgid=False, status=False, source=False, end_reason=False):  # type=False
         data = {
             "core": {
-                "didm": {"uuid": "0"},  # what is it?
                 "en": en,
                 "pid": self.persona_id,
                 "pidm": {"nucleus": self.nucleus_id},
