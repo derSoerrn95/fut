@@ -6,7 +6,7 @@ Development Lead
 - Piotr Staroszczyk <piotr.staroszczyk@get24.org>
 
 
-Documentation mainteiner
+Documentation maintainer
 ------------------------
 
 - Trevor McCormick @TrevorMcCormick

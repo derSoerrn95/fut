@@ -17,13 +17,9 @@ content.log
 error.log
 fut.log
 test.log
-testemu.py
 screenlog.0
 codecov.yml
 club_players.txt
 database.db
 relist.py
-*cookies.txt
-*stats.json
-*token.txt
 *test.json
